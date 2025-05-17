@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -9,7 +9,7 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
+import dynamic from "next/dynamic";
 import MainLayout from "@/components/MainLayout";
 import {
   FiCalendar,
@@ -38,6 +38,8 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 // Registrar componentes do Chart.js
 ChartJS.register(
@@ -47,6 +49,12 @@ ChartJS.register(
   Title,
   Tooltip,
   Legend
+);
+
+// Carregamento dinâmico do componente de gráfico com {ssr: false}
+const BarChart = dynamic(
+  () => import("react-chartjs-2").then((mod) => mod.Bar),
+  { ssr: false }
 );
 
 // Configuração do gráfico para renderização no lado do servidor
@@ -78,6 +86,16 @@ const data = {
 };
 
 export default function Home() {
+  const { user } = useUser();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!user) {
+      router.push("/sign-in");
+    }
+  }, [user]);
+
+  if (!user) return null;
   return (
     <MainLayout title="Dashboard" currentPath="/">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
@@ -307,16 +325,8 @@ export default function Home() {
             <CardDescription>Acompanhamento dos últimos 7 dias</CardDescription>
           </CardHeader>
           <CardContent>
-            {/* Renderização condicional do gráfico apenas no lado do cliente */}
             <div className="h-[220px] flex items-center justify-center">
-              {typeof window !== "undefined" && (
-                <Bar options={options} data={data} height={220} />
-              )}
-              {typeof window === "undefined" && (
-                <div className="text-muted-foreground flex items-center justify-center h-full">
-                  Carregando gráfico...
-                </div>
-              )}
+              <BarChart options={options} data={data} height={220} />
             </div>
           </CardContent>
         </Card>
