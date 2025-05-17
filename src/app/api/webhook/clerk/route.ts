@@ -9,7 +9,7 @@ const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET || "";
 
 export async function POST(req: Request) {
   const payload = await req.text();
-  const headerPayload = await headers();
+  const headersList = await headers();
 
   const svix = new Webhook(WEBHOOK_SECRET);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -17,9 +17,9 @@ export async function POST(req: Request) {
 
   try {
     event = svix.verify(payload, {
-      "svix-id": headerPayload.get("svix-id") || "",
-      "svix-timestamp": headerPayload.get("svix-timestamp") || "",
-      "svix-signature": headerPayload.get("svix-signature") || "",
+      "svix-id": headersList.get("svix-id") || "",
+      "svix-timestamp": headersList.get("svix-timestamp") || "",
+      "svix-signature": headersList.get("svix-signature") || "",
     });
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
@@ -29,25 +29,37 @@ export async function POST(req: Request) {
   const { type, data } = event;
 
   if (type === "user.created") {
-    await prisma.user.create({
-      data: {
-        id: data.id,
-        nome: data.first_name + " " + data.last_name,
-        email: data.email_addresses[0]?.email_address,
-        senha: data.password,
-        perfil: data.public_metadata.perfil,
-        clinica: data.public_metadata.clinica,
-      },
-    });
+    try {
+      await prisma.user.create({
+        data: {
+          id: data.id,
+          nome: (data.first_name || "") + " " + (data.last_name || ""),
+          email: data.email_addresses?.[0]?.email_address || "",
+          senha: "", // Sem senha, pois é OAuth
+          perfil: data.public_metadata?.perfil || null,
+          clinica: data.public_metadata?.clinica || null,
+        },
+      });
+      console.log("Usuário criado com sucesso:", data.id);
+    } catch (error) {
+      console.error("Erro ao criar usuário:", error);
+      return new NextResponse("Erro ao criar usuário", { status: 500 });
+    }
   }
 
   if (type === "user.deleted") {
-    await prisma.user.delete({
-      where: {
-        id: data.id,
-      },
-    });
+    try {
+      await prisma.user.delete({
+        where: {
+          id: data.id,
+        },
+      });
+      console.log("Usuário deletado com sucesso:", data.id);
+    } catch (error) {
+      console.error("Erro ao deletar usuário:", error);
+      return new NextResponse("Erro ao deletar usuário", { status: 500 });
+    }
   }
 
-  return new NextResponse("Webhook received", { status: 200 });
+  return new NextResponse("Webhook recebido com sucesso", { status: 200 });
 }
