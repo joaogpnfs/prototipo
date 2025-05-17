@@ -25,8 +25,9 @@ export async function POST(request: NextRequest) {
 
     const { user, error } = await createUser({
       email: body.email,
-      name: body.name,
-      role: body.role,
+      nome: body.nome,
+      perfil: body.perfil,
+      clinicaId: body.clinicaId,
     });
 
     if (error) {
