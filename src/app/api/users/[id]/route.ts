@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { deleteUser, updateUser } from "@/services/userService";
+import type { RouteContext } from "../../../../../types";
 
 export async function PUT(
   request: Request,
-  context: { params: { id: string } }
+  context: RouteContext
 ): Promise<Response> {
   try {
     const { id } = context.params;
