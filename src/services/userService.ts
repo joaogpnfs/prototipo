@@ -2,14 +2,22 @@ import { prisma } from "@/lib/db";
 
 export interface UserData {
   email: string;
-  name?: string;
-  role?: string;
+  nome?: string;
+  senha?: string;
+  perfil?: string;
+  clinicaId?: number;
 }
 
 export async function createUser(userData: UserData) {
   try {
     const user = await prisma.user.create({
-      data: userData,
+      data: {
+        email: userData.email,
+        nome: userData.nome!,
+        senha: userData.senha!,
+        perfil: userData.perfil!,
+        clinicaId: userData.clinicaId!,
+      },
     });
     return { user, error: null };
   } catch (error) {
@@ -52,7 +60,7 @@ export async function getAllUsers() {
 export async function updateUser(id: string, userData: Partial<UserData>) {
   try {
     const user = await prisma.user.update({
-      where: { id },
+      where: { id: parseInt(id) },
       data: userData,
     });
     return { user, error: null };
@@ -68,7 +76,7 @@ export async function updateUser(id: string, userData: Partial<UserData>) {
 export async function deleteUser(id: string) {
   try {
     await prisma.user.delete({
-      where: { id },
+      where: { id: parseInt(id) },
     });
     return { success: true, error: null };
   } catch (error) {

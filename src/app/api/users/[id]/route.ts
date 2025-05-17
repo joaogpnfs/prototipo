@@ -10,9 +10,10 @@ export async function PUT(
     const body = await request.json();
 
     const { user, error } = await updateUser(id, {
-      name: body.name,
+      nome: body.nome,
       email: body.email,
-      role: body.role,
+      perfil: body.perfil,
+      clinicaId: body.clinicaId,
     });
 
     if (error) {
