@@ -3,10 +3,10 @@ import { deleteUser, updateUser } from "@/services/userService";
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const body = await request.json();
 
     const { user, error } = await updateUser(id, {
@@ -33,10 +33,10 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const id = params.id;
+    const { id } = await params;
     const { success, error } = await deleteUser(id);
 
     if (error) {
