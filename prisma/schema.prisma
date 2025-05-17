@@ -14,11 +14,273 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String?
-  role      String   @default("user")
-  createdAt DateTime @default(now())
+model Clinica {
+  id              Int           @id @default(autoincrement())
+  nome            String
+  cnpj            String?       @unique
+  endereco        String?
+  telefone        String?
+  email           String?       @unique
+  planoAssinatura String        @default("basico")
+  dataCadastro    DateTime      @default(now())
+  ativo           Boolean       @default(true)
+  usuarios        User[]
+  clientes        Cliente[]
+  prontuarios     Prontuario[]
+  agenda          Agenda[]
+  produtos        Produto[]
+  servicos        Servico[]
+  vendas          Venda[]
+  financeiro      Financeiro[]
+  configuracoes   Configuracao[]
+  modulos         Modulo[]
+}
 
+model User {
+  id           Int          @id @default(autoincrement())
+  clinica      Clinica      @relation(fields: [clinicaId], references: [id])
+  clinicaId    Int
+  nome         String
+  email        String       @unique
+  senha        String
+  perfil       String
+  dataCriacao  DateTime     @default(now())
+  ultimoLogin  DateTime?
+  prontuarios  Prontuario[]
+  agenda       Agenda[]
+  comissoes    Comissao[]
+  logs         Log[]
+}
+
+model Cliente {
+  id           Int       @id @default(autoincrement())
+  clinica      Clinica   @relation(fields: [clinicaId], references: [id])
+  clinicaId    Int
+  nome         String
+  cpf          String?   @unique
+  telefone     String?
+  endereco     String?
+  dataCadastro DateTime  @default(now())
+  animais      Animal[]
+  vendas       Venda[]
+}
+
+model Animal {
+  id              Int           @id @default(autoincrement())
+  cliente         Cliente       @relation(fields: [clienteId], references: [id])
+  clienteId       Int
+  nome            String
+  especie         String?
+  raca            String?
+  idade           Int?
+  dataNascimento  DateTime?
+  peso            Decimal?      @db.Decimal(5, 2)
+  prontuarios     Prontuario[]
+  vacinas         Vacina[]
+  exames          Exame[]
+  medicacoes      Medicacao[]
+  agenda          Agenda[]
+}
+
+model Prontuario {
+  id                Int                @id @default(autoincrement())
+  clinica           Clinica            @relation(fields: [clinicaId], references: [id])
+  clinicaId         Int
+  animal            Animal             @relation(fields: [animalId], references: [id])
+  animalId          Int
+  usuario           User            @relation(fields: [usuarioId], references: [id])
+  usuarioId         Int
+  tipoAtendimento   String
+  dataAtendimento   DateTime
+  diagnostico       String?
+  dataCriacao       DateTime           @default(now())
+  detalhesProntuario DetalhesProntuario?
+}
+
+model DetalhesProntuario {
+  id                   Int        @id @default(autoincrement())
+  prontuario           Prontuario @relation(fields: [prontuarioId], references: [id])
+  prontuarioId         Int        @unique
+  detalhesAtendimento  String?
+  detalhesDiagnostico  String?
+  exameFisico          Json?
+  tratamentoPrescrito  String?
+  observacoes          String?
+  anexos               Json?
+}
+
+model Vacina {
+  id              Int       @id @default(autoincrement())
+  animal          Animal    @relation(fields: [animalId], references: [id])
+  animalId        Int
+  nomeVacina      String
+  dataAplicacao   DateTime
+  dataProximaDose DateTime?
+}
+
+model Exame {
+  id          Int       @id @default(autoincrement())
+  animal      Animal    @relation(fields: [animalId], references: [id])
+  animalId    Int
+  nomeExame   String
+  dataExame   DateTime
+  resultado   String?
+  observacoes String?
+}
+
+model Medicacao {
+  id            Int       @id @default(autoincrement())
+  animal        Animal    @relation(fields: [animalId], references: [id])
+  animalId      Int
+  nomeMedicacao String
+  dosagem       String?
+  dataInicio    DateTime
+  dataFim       DateTime?
+  frequencia    String?
+  observacoes   String?
+}
+
+model Agenda {
+  id            Int       @id @default(autoincrement())
+  clinica       Clinica   @relation(fields: [clinicaId], references: [id])
+  clinicaId     Int
+  animal        Animal    @relation(fields: [animalId], references: [id])
+  animalId      Int
+  usuario       User   @relation(fields: [usuarioId], references: [id])
+  usuarioId     Int
+  dataConsulta  DateTime
+  tipoConsulta  String?
+  status        String    @default("agendado")
+  detalhamento  Json?
+  dataCriacao   DateTime  @default(now())
+}
+
+model Produto {
+  id                Int             @id @default(autoincrement())
+  clinica           Clinica         @relation(fields: [clinicaId], references: [id])
+  clinicaId         Int
+  nome              String
+  descricao         String?
+  preco             Decimal?        @db.Decimal(10, 2)
+  quantidadeEstoque Int?
+  dataEntrada       DateTime?
+  dataValidade      DateTime?
+  itensVenda        ItensVenda[]
+  estoque           Estoque[]
+}
+
+model Servico {
+  id          Int          @id @default(autoincrement())
+  clinica     Clinica      @relation(fields: [clinicaId], references: [id])
+  clinicaId   Int
+  nome        String
+  descricao   String?
+  preco       Decimal?     @db.Decimal(10, 2)
+  itensVenda  ItensVenda[]
+}
+
+model Venda {
+  id              Int            @id @default(autoincrement())
+  clinica         Clinica        @relation(fields: [clinicaId], references: [id])
+  clinicaId       Int
+  cliente         Cliente        @relation(fields: [clienteId], references: [id])
+  clienteId       Int
+  dataVenda       DateTime
+  total           Decimal?       @db.Decimal(10, 2)
+  formaPagamento  String?
+  status          String         @default("pendente")
+  itensVenda      ItensVenda[]
+  notasFiscais    NotaFiscal[]
+  comissoes       Comissao[]
+  fretesDeliveries FreteDelivery[]
+  financeiro      Financeiro[]
+}
+
+model ItensVenda {
+  id            Int       @id @default(autoincrement())
+  venda         Venda     @relation(fields: [vendaId], references: [id])
+  vendaId       Int
+  produto       Produto?  @relation(fields: [produtoId], references: [id])
+  produtoId     Int?
+  servico       Servico?  @relation(fields: [servicoId], references: [id])
+  servicoId     Int?
+  quantidade    Int
+  precoUnitario Decimal   @db.Decimal(10, 2)
+}
+
+model Estoque {
+  id               Int      @id @default(autoincrement())
+  produto          Produto  @relation(fields: [produtoId], references: [id])
+  produtoId        Int
+  tipo             String
+  quantidade       Int
+  dataMovimentacao DateTime
+  motivo           String?
+}
+
+model Financeiro {
+  id             Int       @id @default(autoincrement())
+  clinica        Clinica   @relation(fields: [clinicaId], references: [id])
+  clinicaId      Int
+  tipo           String
+  valor          Decimal   @db.Decimal(10, 2)
+  dataTransacao  DateTime
+  descricao      String?
+  venda          Venda?    @relation(fields: [vendaId], references: [id])
+  vendaId        Int?
+}
+
+model NotaFiscal {
+  id           Int      @id @default(autoincrement())
+  venda        Venda    @relation(fields: [vendaId], references: [id])
+  vendaId      Int
+  tipo         String
+  dataEmissao  DateTime
+  chaveAcesso  String?
+  xml          String?
+}
+
+model Comissao {
+  id            Int      @id @default(autoincrement())
+  venda         Venda    @relation(fields: [vendaId], references: [id])
+  vendaId       Int
+  usuario       User  @relation(fields: [usuarioId], references: [id])
+  usuarioId     Int
+  valorComissao Decimal  @db.Decimal(10, 2)
+  dataCalculo   DateTime
+}
+
+model FreteDelivery {
+  id              Int       @id @default(autoincrement())
+  venda           Venda     @relation(fields: [vendaId], references: [id])
+  vendaId         Int
+  enderecoEntrega String?
+  dataEntrega     DateTime?
+  status          String    @default("pendente")
+  transportadora  String?
+}
+
+model Log {
+  id          Int      @id @default(autoincrement())
+  usuario     User  @relation(fields: [usuarioId], references: [id])
+  usuarioId   Int
+  acao        String
+  dataAcao    DateTime
+  detalhes    String?
+}
+
+model Configuracao {
+  id        Int     @id @default(autoincrement())
+  clinica   Clinica @relation(fields: [clinicaId], references: [id])
+  clinicaId Int
+  chave     String
+  valor     String?
+}
+
+model Modulo {
+  id        Int     @id @default(autoincrement())
+  clinica   Clinica @relation(fields: [clinicaId], references: [id])
+  clinicaId Int
+  nome      String
+  ativo     Boolean @default(true)
 }
