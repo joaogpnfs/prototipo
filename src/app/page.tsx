@@ -93,7 +93,7 @@ export default function Home() {
     if (!user) {
       router.push("/sign-in");
     }
-  }, [user]);
+  }, [user, router]);
 
   if (!user) return null;
   return (

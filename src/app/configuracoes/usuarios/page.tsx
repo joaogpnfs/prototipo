@@ -17,21 +17,20 @@ export default function UsersPage() {
   const { getUsers, deleteUser, isLoading, error } = useUsers();
   const [showForm, setShowForm] = useState(false);
 
-  const loadUsers = async () => {
-    const data = await getUsers();
-    if (data) {
-      setUsers(data);
-    }
-  };
-
   useEffect(() => {
+    const loadUsers = async () => {
+      const data = await getUsers();
+      if (data) {
+        setUsers(data);
+      }
+    };
     loadUsers();
-  }, []);
+  }, [getUsers]);
 
   const handleDeleteUser = async (id: string) => {
     const success = await deleteUser(id);
     if (success) {
-      loadUsers();
+      getUsers();
     }
   };
 
@@ -52,7 +51,7 @@ export default function UsersPage() {
           <UserForm
             onSuccess={() => {
               setShowForm(false);
-              loadUsers();
+              getUsers();
             }}
           />
         </div>
