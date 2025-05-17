@@ -26,5 +26,8 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     id: user.id,
     email: user.email,
+    nome: user.nome,
+    perfil: user.perfil,
+    clinica: user.clinicaId,
   });
 }

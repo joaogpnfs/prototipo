@@ -32,8 +32,11 @@ export async function POST(req: Request) {
     await prisma.user.create({
       data: {
         id: data.id,
-        name: data.first_name + " " + data.last_name,
+        nome: data.first_name + " " + data.last_name,
         email: data.email_addresses[0]?.email_address,
+        senha: data.password,
+        perfil: data.public_metadata.perfil,
+        clinica: data.public_metadata.clinica,
       },
     });
   }
