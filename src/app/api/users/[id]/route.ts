@@ -4,7 +4,7 @@ import type { RouteContext } from "../../../../../types";
 
 export async function PUT(
   request: Request,
-  context: RouteContext
+  context: RouteContext<{ id: string }>
 ): Promise<Response> {
   try {
     const { id } = context.params;
