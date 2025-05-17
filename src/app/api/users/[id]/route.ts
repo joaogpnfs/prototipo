@@ -1,13 +1,12 @@
 import { NextResponse } from "next/server";
 import { deleteUser, updateUser } from "@/services/userService";
-import type { RouteContext } from "../../../../../types";
 
 export async function PUT(
   request: Request,
-  context: RouteContext<{ id: string }>
-): Promise<Response> {
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const id = params.id;
     const body = await request.json();
 
     const { user, error } = await updateUser(id, {
@@ -27,16 +26,17 @@ export async function PUT(
       { error: "Erro ao processar a requisição" },
       { status: 400 }
     );
+  } finally {
+    console.log("PUT request completed");
   }
 }
 
-// Função para deletar o usuário (DELETE)
 export async function DELETE(
   request: Request,
-  context: { params: { id: string } }
-): Promise<Response> {
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const id = params.id;
     const { success, error } = await deleteUser(id);
 
     if (error) {
