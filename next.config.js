@@ -2,7 +2,7 @@
 const nextConfig = {
   /* config options here */
   experimental: {
-    serverComponentsExternalPackages: ["@clerk/clerk-sdk-node"],
+    serverExternalPackages: ["@clerk/clerk-sdk-node"],
   },
 };
 
