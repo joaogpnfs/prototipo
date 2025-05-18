@@ -1,29 +1,44 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_NAMES } from "@/lib/supabase";
 
-// Rotas públicas
-const isPublicRoute = createRouteMatcher([
-  "/login(.*)",
-  "/cadastro(.*)",
-  "/sign-in(.*)",
-  "/sign-up(.*)",
-  "/api/(.*)auth(.*)",
-  "/_clerk/(.*)",
-  "/api/webhooks(.*)",
-]);
+// Rotas públicas que não precisam de autenticação
+const publicRoutes = [
+  "/login",
+  "/cadastro",
+  "/sign-in",
+  "/sign-up",
+  "/api/auth",
+  "/api/webhook",
+];
 
-export default clerkMiddleware(async (auth, req) => {
-  const authObject = await auth();
+export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
 
-  if (!isPublicRoute(req) && !authObject.userId) {
-    // Redirecionar para login se não estiver autenticado
-    const url = new URL("/sign-in", req.url);
-    url.searchParams.set("redirect_url", req.nextUrl.pathname);
-    return NextResponse.redirect(url);
+  // Verificar se a rota atual é pública
+  const isPublicRoute = publicRoutes.some(
+    (route) =>
+      pathname.startsWith(route) || pathname.match(new RegExp(`^${route}(.*)`))
+  );
+
+  // Se for uma rota pública, permite o acesso
+  if (isPublicRoute) {
+    return NextResponse.next();
+  }
+
+  // Verificar se o usuário tem token de sessão
+  const hasSessionCookie =
+    req.cookies.has(COOKIE_NAMES.ACCESS_TOKEN) ||
+    req.cookies.has(COOKIE_NAMES.REFRESH_TOKEN);
+
+  // Se não estiver autenticado, redirecionar para login
+  if (!hasSessionCookie) {
+    const redirectUrl = new URL("/sign-in", req.url);
+    redirectUrl.searchParams.set("redirect_url", pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
   return NextResponse.next();
-});
+}
 
 export const config = {
   matcher: [

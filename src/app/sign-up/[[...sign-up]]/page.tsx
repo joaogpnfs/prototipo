@@ -1,6 +1,8 @@
 "use client";
 
-import { SignUp } from "@clerk/nextjs";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -8,19 +10,80 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
 
 export default function SignUpPage() {
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    // Verificar se as senhas coincidem
+    if (password !== confirmPassword) {
+      setError("As senhas não coincidem");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          userData: {
+            nome: nome || email.split("@")[0],
+            perfil: "admin",
+          },
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Erro ao criar conta");
+      }
+
+      console.log("Usuário criado com sucesso:", data.user);
+
+      // Cadastro bem-sucedido - redirecionar para login
+      router.push("/sign-in?cadastro=sucesso");
+    } catch (err) {
+      console.error("Erro ao criar conta:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Ocorreu um erro ao criar sua conta. Tente novamente."
+      );
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Lado esquerdo - Imagem e mensagem de boas-vindas */}
-      <div className="hidden md:flex w-1/2 bg-emerald-700 text-white relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-emerald-700 to-emerald-900 opacity-80 z-10"></div>
+      <div className="hidden md:flex w-1/2 bg-emerald-600 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-emerald-600 to-emerald-800 opacity-80 z-10"></div>
 
         <Image
           src="/close-no-veterinario-cuidando-cachorro.jpg"
-          alt="Equipe veterinária"
+          alt="Veterinário cuidando de animais"
           fill
           className="object-cover z-0 opacity-75"
           priority
@@ -40,10 +103,10 @@ export default function SignUpPage() {
             </div>
 
             <div className="mt-12">
-              <h2 className="text-3xl font-bold mb-6">Comece sua jornada!</h2>
+              <h2 className="text-3xl font-bold mb-6">Crie sua conta!</h2>
               <p className="text-lg opacity-90 max-w-md">
-                Crie sua conta e transforme a gestão da sua clínica veterinária
-                com nossa plataforma completa.
+                Registre-se para começar a gerenciar sua clínica veterinária com
+                as melhores ferramentas do mercado.
               </p>
             </div>
           </div>
@@ -62,14 +125,14 @@ export default function SignUpPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold">Rápido e fácil</h3>
+                <h3 className="font-semibold">Gerenciamento completo</h3>
                 <p className="opacity-80">
-                  Configure sua clínica em minutos e comece a usar
+                  Gerencie pacientes, consultas e estoque em um só lugar
                 </p>
               </div>
             </div>
@@ -87,39 +150,14 @@ export default function SignUpPage() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M7 11.5V14m0-2.5v-6a2 2 0 014 0v6m-4 0h4m-4 0h0m-7 4h18M9 18a2 2 0 002 2h.01a2 2 0 002-2m-6 0a2 2 0 012-2h2a2 2 0 012 2m-6 0v-2"
+                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
                   />
                 </svg>
               </div>
               <div>
-                <h3 className="font-semibold">Acesso a todos os recursos</h3>
+                <h3 className="font-semibold">Segurança em primeiro lugar</h3>
                 <p className="opacity-80">
-                  Prontuários, agendamentos, estoque e muito mais
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h3 className="font-semibold">Suporte dedicado</h3>
-                <p className="opacity-80">
-                  Nossa equipe está sempre disponível para ajudar
+                  Dados protegidos com a mais alta tecnologia
                 </p>
               </div>
             </div>
@@ -154,29 +192,97 @@ export default function SignUpPage() {
                 Crie sua conta
               </CardTitle>
               <CardDescription className="text-center">
-                Comece a jornada para transformar sua clínica
+                Preencha seus dados para se registrar
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SignUp
-                path="/sign-up"
-                routing="path"
-                signInUrl="/sign-in"
-                appearance={{
-                  elements: {
-                    formButtonPrimary:
-                      "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-md transition-colors",
-                    card: "shadow-none",
-                    footer: "text-center",
-                    formFieldInput:
-                      "border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200 transition",
-                  },
-                  variables: {
-                    colorPrimary: "#059669",
-                    colorText: "#374151",
-                  },
-                }}
-              />
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nome">Nome</Label>
+                  <Input
+                    id="nome"
+                    type="text"
+                    placeholder="Seu nome completo"
+                    value={nome}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNome(e.target.value)
+                    }
+                    required
+                    className="rounded border-gray-300 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(e.target.value)
+                    }
+                    required
+                    className="rounded border-gray-300 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Senha</Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(e.target.value)
+                    }
+                    required
+                    className="rounded border-gray-300 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirme a senha</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={confirmPassword}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setConfirmPassword(e.target.value)
+                    }
+                    required
+                    className="rounded border-gray-300 focus:border-emerald-500"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 transition-colors"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Cadastrando..." : "Criar conta"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Já tem uma conta?{" "}
+                  <Link
+                    href="/sign-in"
+                    className="text-emerald-600 hover:text-emerald-800 font-medium"
+                  >
+                    Faça login
+                  </Link>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
