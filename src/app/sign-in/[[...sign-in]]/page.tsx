@@ -1,6 +1,8 @@
 "use client";
 
-import { SignIn } from "@clerk/nextjs";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -8,10 +10,58 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignInPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const { signIn, loading: isLoading } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Verificar se tem mensagem de cadastro
+  useEffect(() => {
+    const cadastroStatus = searchParams.get("cadastro");
+    if (cadastroStatus === "sucesso") {
+      setMessage("Cadastro realizado com sucesso! Faça login para continuar.");
+    }
+  }, [searchParams]);
+
+  const redirectUrl = searchParams.get("redirect_url") || "/";
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError(null);
+
+    try {
+      const { error: signInError } = await signIn(email, password);
+
+      if (signInError) {
+        setError(signInError);
+        return;
+      }
+
+      // Login bem-sucedido - redirecionar
+      console.log("Usuário autenticado com sucesso!");
+      router.push(redirectUrl);
+    } catch (err) {
+      console.error("Erro ao fazer login:", err);
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Ocorreu um erro ao fazer login. Tente novamente."
+      );
+    }
+  };
+
   return (
     <div className="flex min-h-screen">
       {/* Lado esquerdo - Imagem e mensagem de boas-vindas */}
@@ -133,25 +183,77 @@ export default function SignInPage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <SignIn
-                path="/sign-in"
-                routing="path"
-                signUpUrl="/sign-up"
-                appearance={{
-                  elements: {
-                    formButtonPrimary:
-                      "bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-md transition-colors",
-                    card: "shadow-none",
-                    footer: "text-center",
-                    formFieldInput:
-                      "border-gray-300 focus:border-emerald-500 focus:ring focus:ring-emerald-200 transition",
-                  },
-                  variables: {
-                    colorPrimary: "#059669",
-                    colorText: "#374151",
-                  },
-                }}
-              />
+              {message && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+                  {message}
+                </div>
+              )}
+
+              {error && (
+                <Alert variant="destructive" className="mb-4">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="seu@email.com"
+                    value={email}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setEmail(e.target.value)
+                    }
+                    required
+                    className="rounded border-gray-300 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="password">Senha</Label>
+                    <Link
+                      href="#"
+                      className="text-sm text-emerald-600 hover:text-emerald-800"
+                    >
+                      Esqueceu a senha?
+                    </Link>
+                  </div>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setPassword(e.target.value)
+                    }
+                    required
+                    className="rounded border-gray-300 focus:border-emerald-500"
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 transition-colors"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Entrando..." : "Entrar"}
+                </Button>
+              </form>
+
+              <div className="mt-6 text-center">
+                <p className="text-sm text-gray-600">
+                  Não tem uma conta?{" "}
+                  <Link
+                    href="/sign-up"
+                    className="text-emerald-600 hover:text-emerald-800 font-medium"
+                  >
+                    Cadastre-se
+                  </Link>
+                </p>
+              </div>
             </CardContent>
           </Card>
         </motion.div>
