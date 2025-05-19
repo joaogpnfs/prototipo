@@ -5,7 +5,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { randomUUID } from "crypto";
 
-export default function SignupForm() {
+interface UserFormProps {
+  onSuccess?: () => void;
+}
+
+export default function SignupForm({ onSuccess }: UserFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nome, setNome] = useState("");
@@ -31,6 +35,7 @@ export default function SignupForm() {
     if (result.error) {
       setError(result.error);
     } else {
+      onSuccess?.();
       router.push("/dashboard");
     }
   };

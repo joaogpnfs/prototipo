@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
+import { randomUUID } from "crypto";
 
 export default function SignUpPage() {
   const [nome, setNome] = useState("");
@@ -41,7 +42,7 @@ export default function SignUpPage() {
       const { error: signUpError } = await signUp(email, password, {
         nome: nome || email.split("@")[0],
         perfil: "admin",
-        clinicaId: 0, // Será criada uma clínica automaticamente
+        clinicaId: randomUUID(), // Será criada uma clínica automaticamente
       });
 
       if (signUpError) {
