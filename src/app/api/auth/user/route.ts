@@ -1,14 +1,39 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser as getSupabaseUser } from "@/lib/supabase";
+import { getAuthCookies, createAuthenticatedClient } from "@/lib/supabase";
 
 export async function GET(req: NextRequest) {
   try {
-    const supabaseUser = await getSupabaseUser();
+    // Verificar token de autorização no cabeçalho
+    const authHeader = req.headers.get("authorization");
+    let token = "";
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.substring(7);
+    } else {
+      // Tentar obter do cookie como fallback
+      const { accessToken } = getAuthCookies(req.headers);
+      token = accessToken || "";
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: { message: "Não autenticado - Token não encontrado" } },
+        { status: 401 }
+      );
+    }
+
+    // Criar cliente autenticado com o token
+    const supabase = createAuthenticatedClient(token);
+
+    // Verificar usuário autenticado
+    const {
+      data: { user: supabaseUser },
+    } = await supabase.auth.getUser();
 
     if (!supabaseUser) {
       return NextResponse.json(
-        { error: { message: "Usuário não autenticado" } },
+        { error: { message: "Usuário não autenticado ou token inválido" } },
         { status: 401 }
       );
     }

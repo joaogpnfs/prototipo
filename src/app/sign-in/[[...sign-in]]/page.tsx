@@ -16,14 +16,14 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { signInWithEmail } from "@/lib/supabase";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { signIn, loading: isLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -39,36 +39,18 @@ export default function SignInPage() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
     try {
-      // Primeiro faz login via Supabase
-      const supabaseResponse = await signInWithEmail(email, password);
+      const { error: signInError } = await signIn(email, password);
 
-      if (supabaseResponse.error) {
-        setError(supabaseResponse.error.message);
-        setIsLoading(false);
+      if (signInError) {
+        setError(signInError);
         return;
       }
 
-      // Se a autenticação for bem-sucedida, busca os dados do usuário na API
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Erro ao fazer login");
-      }
-
       // Login bem-sucedido - redirecionar
-      console.log("Usuário autenticado:", data.user);
+      console.log("Usuário autenticado com sucesso!");
       router.push(redirectUrl);
     } catch (err) {
       console.error("Erro ao fazer login:", err);
@@ -77,7 +59,6 @@ export default function SignInPage() {
           ? err.message
           : "Ocorreu um erro ao fazer login. Tente novamente."
       );
-      setIsLoading(false);
     }
   };
 

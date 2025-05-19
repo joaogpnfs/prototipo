@@ -1,49 +1,62 @@
 import { NextRequest, NextResponse } from "next/server";
-import { COOKIE_NAMES } from "@/lib/supabase";
-
-// Rotas públicas que não precisam de autenticação
-const publicRoutes = [
-  "/login",
-  "/cadastro",
-  "/sign-in",
-  "/sign-up",
-  "/api/auth",
-  "/api/webhook",
-];
+import { createMiddlewareClient } from "@supabase/auth-helpers-nextjs";
 
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const res = NextResponse.next();
+  const supabase = createMiddlewareClient({ req, res });
 
-  // Verificar se a rota atual é pública
-  const isPublicRoute = publicRoutes.some(
-    (route) =>
-      pathname.startsWith(route) || pathname.match(new RegExp(`^${route}(.*)`))
-  );
+  // Verificar autenticação
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
 
-  // Se for uma rota pública, permite o acesso
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
+  // Pathname atual
+  const pathname = req.nextUrl.pathname;
 
-  // Verificar se o usuário tem token de sessão
-  const hasSessionCookie =
-    req.cookies.has(COOKIE_NAMES.ACCESS_TOKEN) ||
-    req.cookies.has(COOKIE_NAMES.REFRESH_TOKEN);
+  // Rotas que não precisam de autenticação
+  const publicRoutes = [
+    "/",
+    "/sign-in",
+    "/sign-up",
+    "/api/auth/signup",
+    "/api/auth/login",
+    "/api/auth/user",
+  ];
 
-  // Se não estiver autenticado, redirecionar para login
-  if (!hasSessionCookie) {
+  // Se não estamos em uma rota pública e não temos sessão, redirecionar para login
+  if (
+    !publicRoutes.some(
+      (route) => pathname === route || pathname.startsWith(route + "/")
+    ) &&
+    !session
+  ) {
     const redirectUrl = new URL("/sign-in", req.url);
-    redirectUrl.searchParams.set("redirect_url", pathname);
+    redirectUrl.searchParams.set("redirect", pathname);
     return NextResponse.redirect(redirectUrl);
   }
 
-  return NextResponse.next();
+  // Se estamos na página de login ou cadastro com sessão ativa, redirecionar para dashboard
+  if (
+    (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) &&
+    session
+  ) {
+    return NextResponse.redirect(new URL("/dashboard", req.url));
+  }
+
+  return res;
 }
 
+// Configuração para qual rotas o middleware deve ser executado
 export const config = {
   matcher: [
-    // Bloqueia tudo, exceto arquivos estáticos e _next
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
+    /*
+     * Corresponde a rotas exceto:
+     * - /_next (arquivos estáticos do Next.js)
+     * - /api (rotas da API que não precisam de middleware)
+     * - /_vercel (arquivos do sistema)
+     * - /.well-known (JSON metadata)
+     * - /favicon.ico, /sitemap.xml (arquivos estáticos)
+     */
+    "/((?!_next|_vercel|.well-known|favicon.ico|sitemap.xml).*)",
   ],
 };

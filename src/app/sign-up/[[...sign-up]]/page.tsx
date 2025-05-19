@@ -16,6 +16,7 @@ import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function SignUpPage() {
   const [nome, setNome] = useState("");
@@ -23,44 +24,30 @@ export default function SignUpPage() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const { signUp, loading: isLoading } = useAuth();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setIsLoading(true);
     setError(null);
 
     // Verificar se as senhas coincidem
     if (password !== confirmPassword) {
       setError("As senhas não coincidem");
-      setIsLoading(false);
       return;
     }
 
     try {
-      const response = await fetch("/api/auth/signup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          password,
-          userData: {
-            nome: nome || email.split("@")[0],
-            perfil: "admin",
-          },
-        }),
+      const { error: signUpError } = await signUp(email, password, {
+        nome: nome || email.split("@")[0],
+        perfil: "admin",
+        clinicaId: 0, // Será criada uma clínica automaticamente
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error?.message || "Erro ao criar conta");
+      if (signUpError) {
+        setError(signUpError);
+        return;
       }
-
-      console.log("Usuário criado com sucesso:", data.user);
 
       // Cadastro bem-sucedido - redirecionar para login
       router.push("/sign-in?cadastro=sucesso");
@@ -71,7 +58,6 @@ export default function SignUpPage() {
           ? err.message
           : "Ocorreu um erro ao criar sua conta. Tente novamente."
       );
-      setIsLoading(false);
     }
   };
 

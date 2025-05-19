@@ -1,18 +1,20 @@
-import { NextResponse } from "next/server";
-import { signOut } from "@/lib/supabase";
+import { NextRequest, NextResponse } from "next/server";
+import { COOKIE_NAMES } from "@/lib/supabase";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
   try {
-    await signOut();
+    // Criar resposta e remover os cookies de autenticação
+    const response = NextResponse.json({ success: true }, { status: 200 });
 
-    return NextResponse.json(
-      { success: true, message: "Logout realizado com sucesso" },
-      { status: 200 }
-    );
+    // Remover cookies de autenticação
+    response.cookies.delete(COOKIE_NAMES.ACCESS_TOKEN);
+    response.cookies.delete(COOKIE_NAMES.REFRESH_TOKEN);
+
+    return response;
   } catch (error) {
     console.error("Erro ao fazer logout:", error);
     return NextResponse.json(
-      { success: false, message: "Erro ao fazer logout" },
+      { error: { message: "Erro interno do servidor" } },
       { status: 500 }
     );
   }

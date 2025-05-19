@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -53,7 +53,6 @@ export default function LoginForm() {
         throw new Error(authError.message);
       }
 
-      // Redirecionar para o dashboard
       router.push("/dashboard");
     } catch (err) {
       setError(

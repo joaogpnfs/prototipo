@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { signUp as supabaseSignUp } from "@/lib/supabase";
+import {
+  signUp as supabaseSignUp,
+  COOKIE_NAMES,
+  COOKIE_OPTIONS,
+} from "@/lib/supabase";
 
 export async function POST(req: NextRequest) {
   try {
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
         data: {
           nome: userData.nome || email.split("@")[0],
           email: email,
-          senha: "", // Não armazenamos a senha, isso é gerenciado pelo Supabase
+          senha: password,
           perfil: userData.perfil || "admin",
           clinicaId: clinicaId,
         },
@@ -55,10 +59,27 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      return NextResponse.json(
+      // Cria resposta e define cookies se houver sessão
+      const response = NextResponse.json(
         { success: true, user: novoUsuario },
         { status: 201 }
       );
+
+      // Define cookies de autenticação se houver sessão
+      if (supabaseResponse.data.session) {
+        response.cookies.set(
+          COOKIE_NAMES.ACCESS_TOKEN,
+          supabaseResponse.data.session.access_token,
+          COOKIE_OPTIONS
+        );
+        response.cookies.set(
+          COOKIE_NAMES.REFRESH_TOKEN,
+          supabaseResponse.data.session.refresh_token,
+          COOKIE_OPTIONS
+        );
+      }
+
+      return response;
     } catch (error) {
       console.error("Erro ao criar usuário no Prisma:", error);
       return NextResponse.json(

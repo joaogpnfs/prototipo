@@ -4,6 +4,7 @@ import { type Database } from "@/types/supabase";
 // Configurações compartilhadas
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 
 /**
  * CLIENTES SUPABASE
@@ -40,6 +41,22 @@ export function createAuthenticatedClient(token: string) {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    },
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  });
+}
+
+/**
+ * Cria um cliente Supabase Admin para operações privilegiadas (apenas no servidor)
+ */
+export function createAdminClient() {
+  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }
@@ -203,4 +220,12 @@ export async function updateUserData(userData: UserMetadata) {
   });
 
   return { data, error };
+}
+
+/**
+ * Função para deletar usuário (apenas no servidor)
+ */
+export async function deleteUser(userId: string) {
+  const adminClient = createAdminClient();
+  return adminClient.auth.admin.deleteUser(userId);
 }
