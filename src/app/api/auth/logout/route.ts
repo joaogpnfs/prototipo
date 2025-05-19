@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { COOKIE_NAMES } from "@/lib/supabase";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     // Criar resposta e remover os cookies de autenticação
     const response = NextResponse.json({ success: true }, { status: 200 });
