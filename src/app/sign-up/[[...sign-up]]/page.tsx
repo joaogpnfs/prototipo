@@ -41,7 +41,7 @@ export default function SignUpPage() {
       const { error: signUpError } = await signUp(email, password, {
         nome: nome || email.split("@")[0],
         perfil: "admin",
-        clinicaId: 0, // Será criada uma clínica automaticamente
+        clinicaId: "0",
       });
 
       if (signUpError) {
